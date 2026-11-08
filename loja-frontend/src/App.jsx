@@ -4,8 +4,10 @@ function App() {
   const [produtos, setProdutos] = useState([]);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState(null);
   const [carrinho, setCarrinho] = useState([]);
+  const [carrinhoAberto, setCarrinhoAberto] = useState(false);
   const [usuarioLogado, setUsuarioLogado] = useState(null);
-  
+  const [mensagemNotificacao, setMensagemNotificacao] = useState('');
+
   const [telaAtual, setTelaAtual] = useState('loja');
   const [formaPagamento, setFormaPagamento] = useState('cartao');
 
@@ -27,6 +29,13 @@ function App() {
     ? produtos.filter(p => p.categoria.toLowerCase() === categoriaSelecionada.toLowerCase())
     : produtos;
 
+  const exibirNotificacao = (texto) => {
+    setMensagemNotificacao(texto);
+    setTimeout(() => {
+      setMensagemNotificacao('');
+    }, 3000);
+  };
+
   const handleLogin = (e) => {
     e.preventDefault();
     fetch('http://localhost:3000/login', {
@@ -38,7 +47,7 @@ function App() {
     .then(data => {
       if (data.usuario) {
         setUsuarioLogado(data.usuario);
-        alert("Login efetuado com sucesso!");
+        exibirNotificacao("Login efetuado com sucesso!");
       } else {
         alert(data.erro || "E-mail ou senha incorretos.");
       }
@@ -68,6 +77,7 @@ function App() {
 
   const adicionarAoCarrinho = (produto) => {
     setCarrinho([...carrinho, produto]);
+    exibirNotificacao(`✅ ${produto.nome} adicionado ao carrinho!`);
   };
 
   const removerDoCarrinho = (indexParaRemover) => {
@@ -83,6 +93,7 @@ function App() {
       alert("Seu carrinho está vazio!");
       return;
     }
+    setCarrinhoAberto(false);
     setTelaAtual('pagamento');
   };
 
@@ -106,52 +117,117 @@ function App() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', fontFamily: 'Arial, sans-serif', backgroundColor: '#f4f6f9', color: '#333' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', fontFamily: 'Arial, sans-serif', backgroundColor: '#f4f6f9', color: '#333', position: 'relative' }}>
       
+      {/* TOAST FLUTUANTE DE NOTIFICAÇÃO */}
+      {mensagemNotificacao && (
+        <div style={{ position: 'fixed', bottom: '20px', right: '20px', backgroundColor: '#10b981', color: '#fff', padding: '12px 20px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontWeight: 'bold', zIndex: 2000 }}>
+          {mensagemNotificacao}
+        </div>
+      )}
+
       {/* HEADER */}
       <header style={{ background: '#1e293b', color: '#fff', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
         <h2 style={{ cursor: 'pointer', margin: 0, fontSize: '22px' }} onClick={() => setTelaAtual('loja')}>TechStore Facul</h2>
-        <div>
-          {usuarioLogado ? (
-            <span style={{ fontSize: '14px' }}>
-              Olá, <b>{usuarioLogado.nome}</b> |&nbsp;
-              <button 
-                onClick={() => setUsuarioLogado(null)}
-                style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}
-              >
-                Sair
-              </button>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div>
+            {usuarioLogado ? (
+              <span style={{ fontSize: '14px' }}>
+                Olá, <b>{usuarioLogado.nome}</b> |&nbsp;
+                <button 
+                  onClick={() => setUsuarioLogado(null)}
+                  style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  Sair
+                </button>
+              </span>
+            ) : (
+              <div>
+                {modoCadastro ? (
+                  <form onSubmit={handleCadastro} style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                    <input type="text" placeholder="Nome" value={nomeInput} onChange={e => setNomeInput(e.target.value)} required style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                    <input type="email" placeholder="E-mail" value={emailInput} onChange={e => setEmailInput(e.target.value)} required style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                    <input type="password" placeholder="Senha" value={senhaInput} onChange={e => setSenhaInput(e.target.value)} required style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                    <button type="submit" style={{ background: '#22c55e', color: '#fff', border: 'none', padding: '7px 12px', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>Cadastrar</button>
+                    <button type="button" onClick={() => setModoCadastro(false)} style={{ background: 'transparent', color: '#93c5fd', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Já tenho conta</button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleLogin} style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                    <input type="email" placeholder="E-mail" value={emailInput} onChange={e => setEmailInput(e.target.value)} required style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                    <input type="password" placeholder="Senha" value={senhaInput} onChange={e => setSenhaInput(e.target.value)} required style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
+                    <button type="submit" style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '7px 12px', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>Entrar</button>
+                    <button type="button" onClick={() => setModoCadastro(true)} style={{ background: 'transparent', color: '#93c5fd', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Criar conta</button>
+                  </form>
+                )}
+              </div>
+            )}
+          </div>
+
+          <button 
+            onClick={() => setCarrinhoAberto(!carrinhoAberto)} 
+            style={{ background: '#334155', border: 'none', color: '#fff', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 'bold' }}
+          >
+            🛒
+            <span style={{ background: '#3b82f6', borderRadius: '50%', padding: '2px 8px', fontSize: '12px' }}>
+              {carrinho.length}
             </span>
-          ) : (
-            <div>
-              {modoCadastro ? (
-                <form onSubmit={handleCadastro} style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
-                  <input type="text" placeholder="Nome" value={nomeInput} onChange={e => setNomeInput(e.target.value)} required style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                  <input type="email" placeholder="E-mail" value={emailInput} onChange={e => setEmailInput(e.target.value)} required style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                  <input type="password" placeholder="Senha" value={senhaInput} onChange={e => setSenhaInput(e.target.value)} required style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                  <button type="submit" style={{ background: '#22c55e', color: '#fff', border: 'none', padding: '7px 12px', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>Cadastrar</button>
-                  <button type="button" onClick={() => setModoCadastro(false)} style={{ background: 'transparent', color: '#93c5fd', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Já tenho conta</button>
-                </form>
-              ) : (
-                <form onSubmit={handleLogin} style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
-                  <input type="email" placeholder="E-mail" value={emailInput} onChange={e => setEmailInput(e.target.value)} required style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                  <input type="password" placeholder="Senha" value={senhaInput} onChange={e => setSenhaInput(e.target.value)} required style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
-                  <button type="submit" style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '7px 12px', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>Entrar</button>
-                  <button type="button" onClick={() => setModoCadastro(true)} style={{ background: 'transparent', color: '#93c5fd', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Criar conta</button>
-                </form>
-              )}
-            </div>
-          )}
+          </button>
         </div>
       </header>
 
+      {/* PAINEL LATERAL DO CARRINHO */}
+      {carrinhoAberto && (
+        <div style={{ position: 'fixed', top: 0, right: 0, width: '320px', height: '100%', backgroundColor: '#ffffff', boxShadow: '-4px 0 15px rgba(0,0,0,0.15)', zIndex: 1000, padding: '25px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>
+              <h3 style={{ margin: 0, color: '#1e293b' }}>🛒 Seu Carrinho</h3>
+              <button onClick={() => setCarrinhoAberto(false)} style={{ background: 'transparent', border: 'none', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', color: '#64748b' }}>✕</button>
+            </div>
+
+            {carrinho.length === 0 ? (
+              <p style={{ color: '#64748b', fontSize: '14px' }}>Seu carrinho está vazio.</p>
+            ) : (
+              <ul style={{ paddingLeft: '0', listStyle: 'none', margin: 0, maxHeight: '60vh', overflowY: 'auto' }}>
+                {carrinho.map((item, index) => (
+                  <li key={index} style={{ fontSize: '13px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#334155', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold' }}>{item.nome}</div>
+                      <div style={{ color: '#16a34a' }}>R$ {item.preco.toFixed(2)}</div>
+                    </div>
+                    <button 
+                      onClick={() => removerDoCarrinho(index)} 
+                      style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
+                    >
+                      Remover
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {carrinho.length > 0 && (
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px' }}>
+              <p style={{ fontWeight: 'bold', fontSize: '16px', color: '#0f172a', margin: '0 0 15px 0', display: 'flex', justifyContent: 'space-between' }}>
+                <span>Total:</span>
+                <span style={{ color: '#16a34a' }}>R$ {carrinho.reduce((acc, item) => acc + item.preco, 0).toFixed(2)}</span>
+              </p>
+              <button 
+                onClick={irParaPagamento}
+                style={{ background: '#16a34a', color: '#fff', border: 'none', padding: '12px', width: '100%', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
+              >
+                Finalizar Pedido
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* CORPO PRINCIPAL */}
       <div style={{ display: 'flex', flex: 1 }}>
-        
-        {/* TELA DA LOJA */}
         {telaAtual === 'loja' && (
           <>
-            {/* SIDEBAR DE CATEGORIAS */}
             <aside style={{ width: '260px', background: '#ffffff', padding: '20px', borderRight: '1px solid #e2e8f0', boxShadow: '2px 0 5px rgba(0,0,0,0.02)' }}>
               <h3 style={{ color: '#1e293b', marginTop: 0 }}>Categorias</h3>
               <ul style={{ listStyle: 'none', padding: 0, marginTop: '15px' }}>
@@ -173,7 +249,6 @@ function App() {
               </ul>
             </aside>
 
-            {/* VITRINE */}
             <main style={{ flex: 1, padding: '25px' }}>
               <h2 style={{ color: '#1e293b', marginTop: 0 }}>{categoriaSelecionada ? `Categoria: ${categoriaSelecionada.toUpperCase()}` : 'Vitrine de Produtos'}</h2>
               
@@ -183,7 +258,6 @@ function App() {
                 ) : (
                   produtosFiltrados.map(produto => (
                     <div key={produto.id} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden' }}>
-                      {/* CONTAINER DA IMAGEM AJUSTADO */}
                       <div style={{ background: '#f8fafc', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '140px', borderBottom: '1px solid #e2e8f0', padding: '10px' }}>
                         <img src={produto.imagem} alt={produto.nome} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                       </div>
@@ -208,45 +282,9 @@ function App() {
                 )}
               </div>
             </main>
-
-            {/* CARRINHO */}
-            <aside style={{ width: '280px', background: '#ffffff', padding: '20px', borderLeft: '1px solid #e2e8f0', boxShadow: '-2px 0 5px rgba(0,0,0,0.02)' }}>
-              <h3 style={{ color: '#1e293b', marginTop: 0 }}>🛒 Carrinho</h3>
-              {carrinho.length === 0 ? (
-                <p style={{ color: '#64748b', fontSize: '14px' }}>Seu carrinho está vazio.</p>
-              ) : (
-                <div>
-                  <ul style={{ paddingLeft: '15px', marginBottom: '15px' }}>
-                    {carrinho.map((item, index) => (
-                      <li key={index} style={{ fontSize: '13px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#334155' }}>
-                        <span>{item.nome} - R$ {item.preco.toFixed(2)}</span>
-                        <button 
-                          onClick={() => removerDoCarrinho(index)} 
-                          style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '2px 6px', borderRadius: '3px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
-                        >
-                          X
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '10px', marginBottom: '15px' }}>
-                    <p style={{ fontWeight: 'bold', fontSize: '15px', color: '#0f172a', margin: 0 }}>
-                      Total: R$ {carrinho.reduce((acc, item) => acc + item.preco, 0).toFixed(2)}
-                    </p>
-                  </div>
-                  <button 
-                    onClick={irParaPagamento}
-                    style={{ background: '#16a34a', color: '#fff', border: 'none', padding: '10px', width: '100%', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
-                  >
-                    Finalizar Pedido
-                  </button>
-                </div>
-              )}
-            </aside>
           </>
         )}
 
-        {/* TELA DE PAGAMENTO */}
         {telaAtual === 'pagamento' && (
           <div style={{ flex: 1, padding: '40px', maxWidth: '600px', margin: '0 auto' }}>
             <button 
@@ -303,7 +341,6 @@ function App() {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
